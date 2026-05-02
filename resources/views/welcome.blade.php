@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WebGIS Miskin & Ibadah</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- DaisyUI + Tailwind -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Plus Jakarta Sans Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        body {
+            font-weight: 500;
+        }
+        h1, h2, h3, h4, h5, h6, .btn, .card-title, .stat-value {
+            font-weight: 700 !important;
+            letter-spacing: -0.02em;
+        }
+        #bgMap {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.5;
+            filter: saturate(1.2) brightness(0.7);
+        }
+        .hero {
+            position: relative;
+            z-index: 10;
+            background: transparent !important;
+        }
+        /* Glass effect for content */
+        .hero-content {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            padding: 3rem;
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        [data-theme="dark"] .hero-content {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200 flex flex-col items-center justify-center overflow-hidden">
+    
+    <!-- Background Map -->
+    <div id="bgMap"></div>
+
+    <div class="hero min-h-screen">
+        <div class="hero-content text-center flex-col gap-2">
+            <!-- Logo -->
+            <div class="text-7xl mb-2">🏘️</div>
+            <h1 class="text-4xl font-bold tracking-tight text-primary">WebGIS Miskin & Ibadah</h1>
+            <p class="max-w-md text-base-content/60 mt-2 mb-6 leading-relaxed">
+                Sistem Informasi Geografis untuk pemetaan rumah ibadah dan 
+                analisis sebaran keluarga kurang mampu.
+            </p>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{{ url('/map') }}" class="btn btn-primary btn-lg gap-2">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    Buka Peta & Input
+                </a>
+                <a href="{{ url('/data') }}" class="btn btn-outline btn-lg gap-2">
+                    <i class="fa-solid fa-table-list"></i>
+                    Lihat Data Tabular
+                </a>
+            </div>
+
+            <!-- Redirect progress -->
+            <div class="mt-8 w-72">
+                <p class="text-xs text-base-content/40 mb-2">Mengarahkan ke halaman Peta dalam 5 detik...</p>
+                <progress class="progress progress-primary w-full" id="redirectProgress" value="0" max="100"></progress>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Progress bar logic
+        let val = 0;
+        const bar = document.getElementById('redirectProgress');
+        const tick = setInterval(() => {
+            val += 100 / 50; 
+            bar.value = val;
+            if (val >= 100) clearInterval(tick);
+        }, 100);
+        setTimeout(() => { window.location.href = '{{ url('/map') }}'; }, 5000);
+
+        // Background Map logic
+        const map = L.map('bgMap', {
+            zoomControl: false,
+            attributionControl: false,
+            dragging: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false
+        }).setView([-0.0553, 109.3463], 16);
+
+        // Satellite Hybrid (Imagery + Labels)
+        L.layerGroup([
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19
+            }),
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19
+            }),
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19
+            })
+        ]).addTo(map);
+
+        // Fetch markers to show on background
+        Promise.all([
+            fetch('{{ url('/api/ibadah') }}').then(r => r.json()),
+            fetch('{{ url('/api/miskin') }}').then(r => r.json())
+        ]).then(([ibadah, miskin]) => {
+            const markers = [];
+            
+            ibadah.forEach(item => {
+                L.circleMarker([+item.latitude, +item.longitude], {
+                    radius: 7, fillColor: "#22c55e", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
+                }).addTo(map);
+                markers.push([+item.latitude, +item.longitude]);
+            });
+
+            miskin.forEach(item => {
+                L.circleMarker([+item.latitude, +item.longitude], {
+                    radius: 5, fillColor: "#ef4444", color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.7
+                }).addTo(map);
+                markers.push([+item.latitude, +item.longitude]);
+            });
+
+            if (markers.length) {
+                map.fitBounds(markers, { padding: [50, 50] });
+            }
+            
+            // Subtle animation: slow pan
+            let lat = map.getCenter().lat;
+            setInterval(() => {
+                lat += 0.000005;
+                map.panTo([lat, map.getCenter().lng], { animate: true, duration: 1 });
+            }, 1000);
+        }).catch(() => {});
+    </script>
+</body>
+</html>
