@@ -2,6 +2,13 @@
 
 Proyek ini adalah sistem informasi geografis (WebGIS) berbasis web yang dirancang untuk memetakan sebaran rumah ibadah dan keluarga kurang mampu (miskin). Sistem ini memungkinkan pengguna untuk melakukan analisis spasial berdasarkan radius untuk mengetahui dampak atau jangkauan layanan rumah ibadah terhadap komunitas di sekitarnya.
 
+## Filosofi & Latar Belakang
+
+Proyek ini dibangun atas dasar filosofi kepedulian sosial, di mana rumah ibadah memiliki peran sentral dalam kesejahteraan masyarakat di sekitarnya. Prinsip utama sistem ini adalah:
+> **Setiap keluarga kurang mampu yang tinggal di sekitar rumah ibadah dianggap sebagai tanggungan atau prioritas utama untuk mendapatkan bantuan dari rumah ibadah tersebut.**
+
+Dengan adanya sistem WebGIS ini, pengelola rumah ibadah dapat dengan mudah memetakan siapa saja yang membutuhkan bantuan dalam radius tertentu, sehingga distribusi bantuan menjadi lebih tepat sasaran dan terorganisir.
+
 ## Fitur Utama
 
 ### 1. Peta Interaktif (Interactive WebGIS)
